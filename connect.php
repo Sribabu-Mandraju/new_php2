@@ -69,7 +69,7 @@ if (isset($_POST['reg_user'])) {
                 $_SESSION['user_type'] = $user_type;
                 $_SESSION['success'] = "You are now registered and logged in";
                 session_regenerate_id(true);
-                header('location: index.html');
+                header('location: index.php');
                 exit();
             } else {
                 array_push($errors, "Registration failed. Please try again.");
@@ -103,7 +103,7 @@ if (isset($_POST['admin_login'])) {
                 $_SESSION['user_type'] = 'admin';
                 $_SESSION['success'] = "Admin login successful";
                 session_regenerate_id(true);
-                header('location: admin.html');
+                header('location: admin.php');
                 exit();
             } else {
                 array_push($errors, "Wrong email/password combination");
@@ -139,7 +139,7 @@ if (isset($_POST['user_login'])) {
                 $_SESSION['user_type'] = 'user';
                 $_SESSION['success'] = "User login successful";
                 session_regenerate_id(true);
-                header('location: index.html');
+                header('location: index.php');
                 exit();
             } else {
                 array_push($errors, "Wrong email/password combination");
