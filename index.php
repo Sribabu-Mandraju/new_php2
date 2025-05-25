@@ -1,9 +1,12 @@
+<?php
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Masked Intel - Welcome</title>
+    <title>Masked Intel - Home</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -24,13 +27,15 @@
       </div>
 
       <nav>
-        <a href="about.html">About</a>
-        <a href="features.html">Features</a>
-        <a href="contact.html">Contact</a>
-        <a href="admin.html" class="admin-btn">
-          <i class="fas fa-user-shield"></i>
-          Admin Login
-        </a>
+        <a href="about.php">About</a>
+        <a href="features.php">Features</a>
+        <a href="contact.php">Contact</a>
+        <?php if (isLoggedIn()): ?>
+          <a href="dashboard.php" class="nav-btn">Dashboard</a>
+          <a href="logout.php" class="nav-btn">Logout</a>
+        <?php else: ?>
+          <a href="login.php" class="nav-btn">Login</a>
+        <?php endif; ?>
       </nav>
     </header>
 
@@ -41,9 +46,6 @@
           An advanced facial recognition and crowd analytic tool built to
           enhance public safety and security.
         </p>
-        <button class="login-btn" onclick="redirectToLogin()">
-          User Login
-        </button>
       </div>
 
       <div class="hero-image">
@@ -57,13 +59,5 @@
         <p>Trusted AI Security</p>
       </div>
     </section>
-
-    
-    <script>
-      function redirectToLogin() {
-        alert("redirecting");
-        window.location.href = "login.php";
-      }
-    </script>
   </body>
 </html>

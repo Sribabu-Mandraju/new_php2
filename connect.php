@@ -18,9 +18,14 @@ try {
     exit();
 }
 
+// Initialize CSRF token if not exists
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // CSRF Protection
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         array_push($errors, "Invalid request");
         $_SESSION['errors'] = $errors;
         header('location: login.php');
@@ -28,129 +33,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Registration logic
-if (isset($_POST['reg_user'])) {
-    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-    $password_1 = $_POST['password_1'];
-    $password_2 = $_POST['password_2'];
-
-    if (empty($email)) {
-        array_push($errors, "Email is required");
-    }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        array_push($errors, "Invalid email format");
-    }
-    if (empty($password_1)) {
-        array_push($errors, "Password is required");
-    }
-    if (strlen($password_1) < 8) {
-        array_push($errors, "Password must be at least 8 characters long");
-    }
-    if ($password_1 !== $password_2) {
-        array_push($errors, "The two passwords do not match");
-    }
-
-    if (count($errors) == 0) {
-        $stmt = mysqli_prepare($db, "SELECT * FROM users WHERE email = ? LIMIT 1");
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-
-        if (mysqli_num_rows($result) > 0) {
-            array_push($errors, "Email already exists");
-        } else {
-            $password = password_hash($password_1, PASSWORD_DEFAULT);
-            $user_type = 'user';
-            $stmt = mysqli_prepare($db, "INSERT INTO users (email, password, user_type) VALUES (?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, "sss", $email, $password, $user_type);
-            
-            if (mysqli_stmt_execute($stmt)) {
-                $_SESSION['email'] = $email;
-                $_SESSION['user_type'] = $user_type;
-                $_SESSION['success'] = "You are now registered and logged in";
-                session_regenerate_id(true);
-                header('location: index.php');
-                exit();
-            } else {
-                array_push($errors, "Registration failed. Please try again.");
-            }
-        }
-    }
-}
-
-// Admin login
-if (isset($_POST['admin_login'])) {
-    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-    $password = $_POST['password'];
-
-    if (empty($email)) {
-        array_push($errors, "Email is required");
-    }
-    if (empty($password)) {
-        array_push($errors, "Password is required");
-    }
-
-    if (count($errors) == 0) {
-        $stmt = mysqli_prepare($db, "SELECT * FROM users WHERE email = ? AND user_type = 'admin' LIMIT 1");
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-
-        if (mysqli_num_rows($result) == 1) {
-            $user = mysqli_fetch_assoc($result);
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['email'] = $email;
-                $_SESSION['user_type'] = 'admin';
-                $_SESSION['success'] = "Admin login successful";
-                session_regenerate_id(true);
-                header('location: admin.php');
-                exit();
-            } else {
-                array_push($errors, "Wrong email/password combination");
-            }
-        } else {
-            array_push($errors, "Admin account not found or access denied");
-        }
-    }
-}
-
-// User login
+// Handle User Login
 if (isset($_POST['user_login'])) {
     $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
     $password = $_POST['password'];
 
-    if (empty($email)) {
-        array_push($errors, "Email is required");
-    }
-    if (empty($password)) {
-        array_push($errors, "Password is required");
-    }
-
-    if (count($errors) == 0) {
-        $stmt = mysqli_prepare($db, "SELECT * FROM users WHERE email = ? AND user_type = 'user' LIMIT 1");
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-
-        if (mysqli_num_rows($result) == 1) {
-            $user = mysqli_fetch_assoc($result);
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['email'] = $email;
-                $_SESSION['user_type'] = 'user';
-                $_SESSION['success'] = "User login successful";
-                session_regenerate_id(true);
-                header('location: index.php');
-                exit();
-            } else {
-                array_push($errors, "Wrong email/password combination");
-            }
+    // Debug information
+    echo "Login attempt:<br>";
+    echo "Email: " . $email . "<br>";
+    
+    // Check if user exists
+    $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        // For debugging only - remove in production
+        echo "User found in database<br>";
+        echo "Stored password: " . $user['password'] . "<br>";
+        echo "Entered password: " . $password . "<br>";
+        
+        if (password_verify($password, $user['password'])) {
+            $_SESSION['email'] = $email;
+            $_SESSION['user_type'] = $user['user_type'];
+            $_SESSION['success'] = "Login successful!";
+            header('location: dashboard.php');
+            exit();
         } else {
-            array_push($errors, "User account not found");
+            array_push($errors, "Wrong password");
+        }
+    } else {
+        array_push($errors, "User account not found");
+    }
+}
+
+// Handle User Registration
+if (isset($_POST['register'])) {
+    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    
+    // Validate password confirmation
+    if ($password !== $confirm_password) {
+        array_push($errors, "Passwords do not match");
+        $_SESSION['errors'] = $errors;
+        header('location: register.php');
+        exit();
+    }
+    
+    // Validate password strength
+    if (strlen($password) < 6) {
+        array_push($errors, "Password must be at least 6 characters long");
+        $_SESSION['errors'] = $errors;
+        header('location: register.php');
+        exit();
+    }
+    
+    // Check if email already exists
+    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        array_push($errors, "Email already exists");
+    } else {
+        // Hash password before storing
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Insert new user
+        $stmt = $db->prepare("INSERT INTO users (email, password, user_type) VALUES (?, ?, 'user')");
+        $stmt->bind_param("ss", $email, $hashed_password);
+        
+        if ($stmt->execute()) {
+            $_SESSION['email'] = $email;
+            $_SESSION['user_type'] = 'user';
+            $_SESSION['success'] = "Registration successful!";
+            header('location: dashboard.php');
+            exit();
+        } else {
+            array_push($errors, "Registration failed: " . $db->error);
         }
     }
 }
 
-// Display errors
+// If there are errors, redirect back with errors
 if (count($errors) > 0) {
     $_SESSION['errors'] = $errors;
     header('location: login.php');

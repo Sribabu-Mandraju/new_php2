@@ -1,8 +1,9 @@
 <?php
-session_start();
-if (!isset($_SESSION['email'])) {
-  header("Location: login.html");
-  exit();
+require_once 'config.php';
+
+// Check if user is logged in
+if (!isLoggedIn()) {
+    redirectToLogin();
 }
 ?>
 <!DOCTYPE html>
@@ -1114,9 +1115,9 @@ if (!isset($_SESSION['email'])) {
     </div>
 
     <nav>
-      <a href="about.html">About</a>
-      <a href="features.html">Features</a>
-      <a href="contact.html">Contact</a>
+      <a href="about.php">About</a>
+      <a href="features.php">Features</a>
+      <a href="contact.php">Contact</a>
       <button class="nav-btn" onclick="redirectToLogin()">Logout</button>
     </nav>
   </header>
@@ -1763,7 +1764,7 @@ if (!isset($_SESSION['email'])) {
     }
 
     function redirectToLogin() {
-      window.location.href = "login.html";
+      window.location.href = "login.php";
     }
 
     // Initialize drag and drop on page load

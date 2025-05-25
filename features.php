@@ -66,9 +66,9 @@
     </div>
 
     <nav>
-      <a href="about.html">About</a>
-      <a href="features.html">Features</a>
-      <a href="contact.html">Contact</a>
+      <a href="about.php">About</a>
+      <a href="features.php">Features</a>
+      <a href="contact.php">Contact</a>
       <button class="nav-btn" onclick="redirectToLogin()">Admin Login</button>
     </nav>
   </header>
@@ -124,7 +124,7 @@
 
   <script>
     function redirectToLogin() {
-      window.location.href = "login.html";
+      window.location.href = "login.php";
     }
   </script>
 </body>

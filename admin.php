@@ -36,7 +36,7 @@
             <a href="#" class="nav-link" onclick="showSection('messages')">
                 <i class="fas fa-envelope"></i> Messages
             </a>
-            <a href="index.html" class="nav-btn logout-btn">
+            <a href="index.php" class="nav-btn logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>
